@@ -49,6 +49,17 @@ int line_partno_sum(ParsedLine const &line,
                     std::optional<ParsedLine *> prev_line,
                     std::optional<ParsedLine *> next_line) {
   int linesum = 0;
+
+  auto any_sym_on_prev_next_line = [](PointNumber const &num,
+                                      std::vector<PointSymbol> const &symbols) {
+    return std::find_if(
+               symbols.cbegin(), symbols.cend(), [num](PointSymbol const &sym) {
+                 size_t const start = num.index > 0 ? num.index - 1 : 0;
+                 return (sym.index >= start) &&
+                        (sym.index <= num.index + num.size);
+               }) != symbols.cend();
+  };
+
   for (auto const &num : line.numbers) {
     // Check same line
     if (std::find_if(line.symbols.cbegin(), line.symbols.cend(),
@@ -58,24 +69,10 @@ int line_partno_sum(ParsedLine const &line,
                      }) != line.symbols.cend()) {
       linesum += num.value;
     } else if (prev_line.has_value() &&
-               std::find_if(prev_line.value()->symbols.cbegin(),
-                            prev_line.value()->symbols.cend(),
-                            [num](PointSymbol const &sym) {
-                              size_t const start =
-                                  num.index > 0 ? num.index - 1 : 0;
-                              return (sym.index >= start) &&
-                                     (sym.index <= num.index + num.size);
-                            }) != prev_line.value()->symbols.cend()) {
+               any_sym_on_prev_next_line(num, prev_line.value()->symbols)) {
       linesum += num.value;
     } else if (next_line.has_value() &&
-               std::find_if(next_line.value()->symbols.cbegin(),
-                            next_line.value()->symbols.cend(),
-                            [num](PointSymbol const &sym) {
-                              size_t const start =
-                                  num.index > 0 ? num.index - 1 : 0;
-                              return (sym.index >= start) &&
-                                     (sym.index <= num.index + num.size);
-                            }) != next_line.value()->symbols.cend()) {
+               any_sym_on_prev_next_line(num, next_line.value()->symbols)) {
       linesum += num.value;
     }
   }
@@ -86,6 +83,12 @@ int line_partno_sum(ParsedLine const &line,
 int line_gear_sum(ParsedLine const &line, std::optional<ParsedLine *> prev_line,
                   std::optional<ParsedLine *> next_line) {
   int linesum = 0;
+
+  auto is_num_next_to_sym = [](PointNumber const &num, PointSymbol const &sym) {
+    size_t const start = num.index > 0 ? num.index - 1 : 0;
+    return sym.index >= start && sym.index <= num.index + num.size;
+  };
+
   for (auto const &sym : line.symbols) {
     if (sym.symbol != '*') {
       continue;
@@ -99,16 +102,14 @@ int line_gear_sum(ParsedLine const &line, std::optional<ParsedLine *> prev_line,
     }
     if (prev_line.has_value()) {
       for (auto const &num : prev_line.value()->numbers) {
-        size_t const start = num.index > 0 ? num.index - 1 : 0;
-        if (sym.index >= start && sym.index <= num.index + num.size) {
+        if (is_num_next_to_sym(num, sym)) {
           next_to.push_back(num.value);
         }
       }
     }
     if (next_line.has_value()) {
       for (auto const &num : next_line.value()->numbers) {
-        size_t const start = num.index > 0 ? num.index - 1 : 0;
-        if (sym.index >= start && sym.index <= num.index + num.size) {
+        if (is_num_next_to_sym(num, sym)) {
           next_to.push_back(num.value);
         }
       }
@@ -152,4 +153,7 @@ int main(int argc, char const *argv[]) {
   }
   std::cout << sum << std::endl;
   std::cout << sum2 << std::endl;
+
+  // Ideas
+  // Avoid bound checks by adding ring of dots
 }
