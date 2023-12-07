@@ -53,6 +53,10 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "numeric": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "complex": "cpp",
+        "deque": "cpp",
+        "fstream": "cpp",
+        "sstream": "cpp"
     }
 }
